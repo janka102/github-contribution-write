@@ -158,6 +158,10 @@ function main {
       row_text="${row_text}${font[$font_index]}."
     done
 
+    if [[ $invert == 1 ]]; then
+      row_text="$(echo "$row_text" | tr '.#' '#.')"
+    fi
+
     grid+=("$row_text")
   done
 
@@ -170,17 +174,10 @@ function main {
   echo "Ending on   $end"
 
   if [[ $preview == 1 ]]; then
+    # make room for the preview lines
     for (( i=0; i<${#grid[@]}; i++ )); do
-      local row="${grid[$i]}"
-
-      if [[ $invert == 0 ]]; then
-        echo "$row" | tr '.' ' '
-      else
-        echo "$row" | tr '#.' ' #'
-      fi
+      echo
     done
-
-    exit 0
   fi
 
   for (( day=0; day<=$num_days; day++ )); do
@@ -192,24 +189,28 @@ function main {
 
     echo -en "\r$the_date `progress $(( $day * 100 / $num_days ))`"
 
-    if [[ $invert == 0 ]]; then
-      if [[ "$char" == '.' ]]; then
-        continue
-      fi
-    else
-      if [[ "$char" != '.' ]]; then
-        continue
-      fi
+    if [[ "$char" == '.' ]]; then
+      continue
     fi
 
     local commits_diff=$(( $max_commits - $min_commits + 1 ))
     local num_commits=$(( $min_commits + $RANDOM % $commits_diff ))
 
-    for (( i=0; i<$num_commits; i++ )); do
-      if [[ $dry_run == 0 ]]; then
+    if [[ $dry_run == 0 ]]; then
+      for (( i=0; i<$num_commits; i++ )); do
         git commit --allow-empty --date="$the_date" --message "$the_date" > /dev/null
-      fi
-    done
+      done
+    fi
+
+    # draw the character in the correct spot
+    # assume we are on the line right below the preview
+    if [[ $preview == 1 ]]; then
+      echo -en '\r'
+      cursor-up $(( 7 - $y ))
+      cursor-right $(( $x ))
+      echo -n "$char"
+      cursor-down $(( 7 - $y ))
+    fi
   done
 
   echo -e "\r$the_date `progress 100`"
@@ -243,6 +244,26 @@ function usage {
   echo -e '  -i|--invert\t\tInvert the text to be light text on dark background'
   echo -e '  -p|--preview\t\tPreview the message'
   echo -e '  -s|--start\t\tThe date to start at, in unix epoch seconds'
+}
+
+function cursor-up {
+  local n="$1"
+  echo -en "\e[${n}A"
+}
+
+function cursor-down {
+  local n="$1"
+  echo -en "\e[${n}B"
+}
+
+function cursor-right {
+  local n="$1"
+  echo -en "\e[${n}C"
+}
+
+function cursor-left {
+  local n="$1"
+  echo -en "\e[${n}D"
 }
 
 function get-font {
