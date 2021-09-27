@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function main {
-  local start=$(date +%s)
+  local start=$(date --date='-50 week' +%s)
   local message=''
   local min_commits=30
   local max_commits=35
@@ -167,7 +167,7 @@ function main {
 
   local num_days=$(( ${#grid[0]} * ${#grid[@]} - 1 ))
   local beginning="$(date --date="@$start" '+%Y-%m-%d 12:00:00 %z')"
-  beginning="$(date --date="$beginning -$(date --date="@$start" +%u) day -51 week")"
+  beginning="$(date --date="$beginning -$(date --date="@$start" +%u) day")"
   local end="$(date --date="$beginning +$num_days day")"
 
   echo "Starting on $beginning"
@@ -198,7 +198,7 @@ function main {
 
     if [[ $dry_run == 0 ]]; then
       for (( i=0; i<$num_commits; i++ )); do
-        git commit --allow-empty --date="$the_date" --message "$the_date" > /dev/null
+        2>&1 git commit --allow-empty --date="$the_date" --message "$the_date" > /dev/null
       done
     fi
 
